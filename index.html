@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Algorithm Visualizer — Mohit Kumar</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;700;800&display=swap');
+:root{--bg:#0a0a0f;--surface:#111118;--border:#1e1e2e;--accent:#7c6af7;--accent2:#f7426a;--accent3:#42f7c8;--text:#e8e8f0;--muted:#55556a;--compare:#f7426a;--swap:#f7c842;--sorted:#42f7c8;--pivot:#f742c8;--bucket:#7c6af7;--mono:'JetBrains Mono',monospace;--display:'Syne',sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:0.6}
+.wrap{position:relative;z-index:1;max-width:940px;margin:0 auto;padding:28px 20px}
+header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.logo-main{font-family:var(--display);font-size:24px;font-weight:800;letter-spacing:-0.5px;color:#fff;line-height:1}
+.logo-sub{font-size:10px;color:var(--muted);letter-spacing:3px;text-transform:uppercase;margin-top:4px}
+.author-badge{font-size:10px;color:var(--accent);border:1px solid var(--accent);padding:4px 12px;border-radius:20px;letter-spacing:1px;text-decoration:none;align-self:flex-start;margin-top:4px;transition:all .15s}
+.author-badge:hover{background:var(--accent);color:#fff}
+.tabs{display:flex;gap:0;margin-bottom:16px;border-bottom:1px solid var(--border)}
+.tab{font-family:var(--mono);font-size:11px;padding:8px 14px;cursor:pointer;color:var(--muted);border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.5px;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+.panel{display:none}.panel.active{display:block}
+.controls{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.ctrl-group{display:flex;flex-direction:column;gap:7px}
+.ctrl-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.algo-pills{display:flex;flex-wrap:wrap;gap:6px}
+.pill{font-family:var(--mono);font-size:10px;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .15s;letter-spacing:.5px}
+.pill:hover{border-color:var(--accent);color:var(--accent)}
+.pill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.speed-wrap,.size-row{display:flex;align-items:center;gap:8px}
+input[type=range]{-webkit-appearance:none;height:3px;flex:1;background:var(--border);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer}
+.speed-val{font-size:11px;color:var(--accent);min-width:24px}
+.size-val{font-size:11px;color:var(--accent3);min-width:24px}
+.actions{display:flex;gap:8px;align-items:center;grid-column:1/-1;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:11px;font-weight:600;padding:8px 18px;border-radius:7px;cursor:pointer;border:none;letter-spacing:.5px;transition:all .15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#9580ff;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
+.btn-secondary:disabled{opacity:.4;cursor:not-allowed}
+.btn-danger{background:transparent;color:var(--accent2);border:1px solid var(--accent2)}
+.btn-danger:hover{background:var(--accent2);color:#fff}
+.btn-danger:disabled{opacity:.4;cursor:not-allowed}
+.stats-bar{display:flex;gap:20px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat-label{font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.stat-val{font-size:17px;font-weight:700;font-family:var(--display)}
+.stat-val.c{color:var(--accent2)}.stat-val.s{color:var(--swap)}.stat-val.t{color:var(--accent3)}
+.viz-area{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 16px 14px;position:relative;overflow:hidden}
+.viz-area::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,255,255,.012) 2px,rgba(255,255,255,.012) 4px);pointer-events:none;z-index:0}
+.bars{display:flex;align-items:flex-end;gap:2px;height:240px;position:relative;z-index:1}
+.bars.short{height:200px}
+.bar{flex:1;border-radius:3px 3px 0 0;min-width:2px}
+.bar.default{background:linear-gradient(180deg,var(--accent) 0%,rgba(124,106,247,.3) 100%)}
+.bar.comparing{background:linear-gradient(180deg,var(--compare) 0%,rgba(247,66,106,.3) 100%);box-shadow:0 0 8px var(--compare)}
+.bar.swapping{background:linear-gradient(180deg,var(--swap) 0%,rgba(247,200,66,.3) 100%);box-shadow:0 0 10px var(--swap)}
+.bar.sorted{background:linear-gradient(180deg,var(--sorted) 0%,rgba(66,247,200,.2) 100%);box-shadow:0 0 5px rgba(66,247,200,.2)}
+.bar.pivot{background:linear-gradient(180deg,var(--pivot) 0%,rgba(247,66,200,.3) 100%);box-shadow:0 0 10px var(--pivot)}
+.bar.bucket{background:linear-gradient(180deg,var(--bucket) 0%,rgba(124,106,247,.3) 100%);box-shadow:0 0 8px var(--bucket)}
+.legend{display:flex;gap:12px;margin-top:14px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.legend-dot{width:8px;height:8px;border-radius:2px}
+.status-msg{position:absolute;top:12px;right:16px;font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;z-index:2}
+.status-msg.running{color:var(--accent)}.status-msg.done{color:var(--accent3)}
+.prog-wrap{height:3px;background:var(--border);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.prog-fill{height:3px;background:var(--accent);border-radius:2px;transition:width .1s;width:0}
+.explain-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--muted);min-height:42px;line-height:1.7}
+.explain-box strong{color:var(--text)}
+.step-controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.how-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;font-size:12px;color:var(--muted);line-height:1.9}
+.how-box strong{color:var(--text)}.how-box h3{font-family:var(--display);font-size:14px;font-weight:700;color:var(--accent);margin-bottom:10px}
+.tag{display:inline-block;background:rgba(124,106,247,.15);color:var(--accent);font-size:10px;padding:2px 8px;border-radius:10px;margin-right:4px;letter-spacing:.5px}
+.cx-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;overflow-x:auto}
+.cx-table{width:100%;border-collapse:collapse;font-size:11px}
+.cx-table th{text-align:left;padding:8px 10px;color:var(--muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;font-size:9px;border-bottom:1px solid var(--border)}
+.cx-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--muted)}
+.cx-table tr.cur td{color:var(--text)}.cx-table tr.cur td:first-child{color:var(--accent);font-weight:600}
+.td-b{color:var(--accent3)!important}.td-a{color:var(--accent)!important}.td-w{color:var(--accent2)!important}.td-s{color:var(--swap)!important}
+.complexity-card{margin-top:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.cx-item{display:flex;flex-direction:column;gap:4px}
+.cx-label{font-size:9px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+.cx-val{font-size:13px;font-weight:700;font-family:var(--display)}
+.cx-val.best{color:var(--accent3)}.cx-val.avg{color:var(--accent)}.cx-val.worst{color:var(--accent2)}.cx-val.space{color:var(--swap)}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.chart-title{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+.chart-wrap{height:260px;position:relative}
+.footer{margin-top:24px;text-align:center;font-size:10px;color:var(--muted);letter-spacing:1px;padding-bottom:20px}
+.footer a{color:var(--accent);text-decoration:none}
+.footer a:hover{text-decoration:underline}
+@media(max-width:600px){.controls{grid-template-columns:1fr}.complexity-card{grid-template-columns:1fr 1fr}.bars{height:160px!important}.stats-bar{gap:12px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <div class="logo-main">ALGO<span style="color:var(--accent)">VIZ</span></div>
+    <div class="logo-sub">Sorting Algorithm Visualizer</div>
+  </div>
+  <a class="author-badge" href="https://github.com/Mohit-Java-Caps" target="_blank">github.com/Mohit-Java-Caps</a>
+</header>
+
+<div class="controls">
+  <div class="ctrl-group">
+    <div class="ctrl-label">Algorithm</div>
+    <div class="algo-pills">
+      <button class="pill active" data-algo="bubble">Bubble Sort</button>
+      <button class="pill" data-algo="selection">Selection</button>
+      <button class="pill" data-algo="insertion">Insertion</button>
+      <button class="pill" data-algo="quick">Quick Sort</button>
+      <button class="pill" data-algo="merge">Merge Sort</button>
+      <button class="pill" data-algo="heap">Heap Sort</button>
+      <button class="pill" data-algo="counting">Counting Sort</button>
+      <button class="pill" data-algo="radix">Radix Sort</button>
+    </div>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Animation Speed</div>
+    <div class="speed-wrap">
+      <span style="font-size:10px;color:var(--muted)">Slow</span>
+      <input type="range" id="speed" min="1" max="10" value="5"/>
+      <span style="font-size:10px;color:var(--muted)">Fast</span>
+      <span class="speed-val" id="speed-label">5</span>
+    </div>
+    <div class="ctrl-label" style="margin-top:8px">Array Size</div>
+    <div class="size-row">
+      <input type="range" id="size" min="10" max="80" value="40"/>
+      <span class="size-val" id="size-label">40</span>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-primary" id="start-btn">&#9654; Visualize</button>
+    <button class="btn btn-secondary" id="reset-btn">&#8635; New Array</button>
+    <button class="btn btn-danger" id="stop-btn" disabled>&#9632; Stop</button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-label">Comparisons</div><div class="stat-val c" id="stat-cmp">0</div></div>
+  <div class="stat"><div class="stat-label">Swaps / Writes</div><div class="stat-val s" id="stat-swp">0</div></div>
+  <div class="stat"><div class="stat-label">Time (ms)</div><div class="stat-val t" id="stat-time">-</div></div>
+  <div class="stat"><div class="stat-label">Elements</div><div class="stat-val" id="stat-el">40</div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="viz">Visualizer</button>
+  <button class="tab" data-tab="step">Step-by-step</button>
+  <button class="tab" data-tab="how">How it works</button>
+  <button class="tab" data-tab="cx">Complexity</button>
+  <button class="tab" data-tab="chart">Performance graph</button>
+</div>
+
+<!-- Visualizer panel -->
+<div id="panel-viz" class="panel active">
+  <div class="viz-area">
+    <div class="status-msg" id="status-msg">READY</div>
+    <div class="bars" id="bars-main"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Default</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--compare)"></div>Comparing</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--swap)"></div>Swapping</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--pivot)"></div>Pivot</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--bucket)"></div>Bucket/Pass</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--sorted)"></div>Sorted</div>
+    </div>
+  </div>
+  <div class="complexity-card">
+    <div class="cx-item"><div class="cx-label">Best Case</div><div class="cx-val best" id="cx-best">O(n)</div></div>
+    <div class="cx-item"><div class="cx-label">Average</div><div class="cx-val avg" id="cx-avg">O(n2)</div></div>
+    <div class="cx-item"><div class="cx-label">Worst Case</div><div class="cx-val worst" id="cx-worst">O(n2)</div></div>
+    <div class="cx-item"><div class="cx-label">Space</div><div class="cx-val space" id="cx-space">O(1)</div></div>
+  </div>
+</div>
+
+<!-- Step panel -->
+<div id="panel-step" class="panel">
+  <div class="viz-area" style="margin-bottom:12px">
+    <div class="status-msg" id="step-status">READY</div>
+    <div class="bars short" id="bars-step"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Default</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--compare)"></div>Comparing</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--swap)"></div>Swapping</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--pivot)"></div>Pivot</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--bucket)"></div>Bucket/Pass</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--sorted)"></div>Sorted</div>
+    </div>
+  </div>
+  <div class="explain-box" id="explain-box">Press <strong>Generate</strong> then use Prev / Next to walk one step at a time, or Run to auto-play.</div>
+  <div class="prog-wrap"><div class="prog-fill" id="prog-fill"></div></div>
+  <div class="step-controls">
+    <button class="btn btn-primary" id="sg-btn">&#8635; Generate</button>
+    <button class="btn btn-secondary" id="sp-btn" disabled>&#8249; Prev</button>
+    <button class="btn btn-secondary" id="splay-btn" disabled>&#9654; Run</button>
+    <button class="btn btn-secondary" id="sn-btn" disabled>&#8250; Next</button>
+    <button class="btn btn-danger" id="sstop-btn" disabled>&#9632; Stop</button>
+    <span style="font-size:10px;color:var(--muted);margin-left:auto" id="step-counter">0 / 0</span>
+  </div>
+</div>
+
+<!-- How it works panel -->
+<div id="panel-how" class="panel">
+  <div class="how-box" id="how-box"></div>
+</div>
+
+<!-- Complexity panel -->
+<div id="panel-cx" class="panel">
+  <div class="cx-card">
+    <table class="cx-table">
+      <thead><tr><th>Algorithm</th><th>Best</th><th>Average</th><th>Worst</th><th>Space</th><th>Stable</th><th>Type</th></tr></thead>
+      <tbody id="cx-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Graph panel -->
+<div id="panel-chart" class="panel">
+  <div class="chart-card">
+    <div class="chart-title">Operations vs Input Size - Theoretical Growth Curves</div>
+    <div class="chart-wrap"><canvas id="perf-chart"></canvas></div>
+  </div>
+</div>
+</div>
+
+<div class="footer">
+  Built by <a href="https://github.com/Mohit-Java-Caps">Mohit Kumar</a> &middot; Java Full Stack Engineer &middot;
+  <a href="https://mohit-java-caps.github.io/mohit-portfolio/">Portfolio</a>
+</div>
+
+<script>
+const ALGOS={
+  bubble:   {label:'Bubble sort',   best:'O(n)',      avg:'O(n2)',      worst:'O(n2)',      space:'O(1)',    stable:true,  type:'Comparison'},
+  selection:{label:'Selection sort',best:'O(n2)',     avg:'O(n2)',      worst:'O(n2)',      space:'O(1)',    stable:false, type:'Comparison'},
+  insertion:{label:'Insertion sort',best:'O(n)',      avg:'O(n2)',      worst:'O(n2)',      space:'O(1)',    stable:true,  type:'Comparison'},
+  quick:    {label:'Quick sort',    best:'O(n log n)',avg:'O(n log n)', worst:'O(n2)',      space:'O(log n)',stable:false, type:'Comparison'},
+  merge:    {label:'Merge sort',    best:'O(n log n)',avg:'O(n log n)', worst:'O(n log n)', space:'O(n)',    stable:true,  type:'Comparison'},
+  heap:     {label:'Heap sort',     best:'O(n log n)',avg:'O(n log n)', worst:'O(n log n)', space:'O(1)',    stable:false, type:'Comparison'},
+  counting: {label:'Counting sort', best:'O(n+k)',    avg:'O(n+k)',     worst:'O(n+k)',     space:'O(k)',    stable:true,  type:'Non-comparison'},
+  radix:    {label:'Radix sort',    best:'O(nk)',     avg:'O(nk)',      worst:'O(nk)',      space:'O(n+k)', stable:true,  type:'Non-comparison'},
+};
+
+const HOW={
+  bubble:`<h3>Bubble Sort</h3><strong>Core idea:</strong> Compare every adjacent pair and swap if out of order. Repeat until no swaps happen.<br><br><span class="tag">Pass 1</span> Compare 0-1, 1-2, 2-3 ... largest element bubbles to the end.<br><span class="tag">Pass 2</span> Same, but stop one earlier - last element already in place.<br><span class="tag">Done</span> After n-1 passes, fully sorted.<br><br><strong>Mental model:</strong> Bubbles rising in water. Heavy values sink right, light values float left.<br><br><strong>When to use:</strong> Nearly-sorted arrays only. Terrible for random data.`,
+  selection:`<h3>Selection Sort</h3><strong>Core idea:</strong> Find the minimum in the unsorted region, move it to the front. Repeat.<br><br><span class="tag">Pass 1</span> Scan entire array, find min, swap to index 0.<br><span class="tag">Pass 2</span> Scan from index 1, find min, swap to index 1.<br><br><strong>Mental model:</strong> Always pick the lowest card from the remaining pile.<br><br><strong>Key property:</strong> Always exactly n-1 swaps - good when swaps are expensive. Always O(n2) comparisons, no early exit.`,
+  insertion:`<h3>Insertion Sort</h3><strong>Core idea:</strong> Maintain a sorted left section. Pick each new element and slide it left into its correct position.<br><br><span class="tag">Step i</span> Take element at index i, scan left, shift larger elements right, drop it in.<br><br><strong>Mental model:</strong> Sorting playing cards in your hand - slide each new card left until it fits.<br><br><strong>Real-world use:</strong> Used inside Timsort (Python and Java Arrays.sort for objects). Excellent for small or nearly-sorted arrays.`,
+  quick:`<h3>Quick Sort</h3><strong>Core idea:</strong> Pick a pivot. Partition: move everything smaller left, everything larger right. Recurse on both halves.<br><br><span class="tag">Partition</span> Choose last element as pivot. Swap elements smaller than pivot to the left side.<br><span class="tag">Place pivot</span> Pivot is now in its final correct position.<br><span class="tag">Recurse</span> Sort left half and right half independently.<br><br><strong>Worst case trap:</strong> O(n2) when pivot is always smallest or largest. Fix: randomise pivot selection.<br><strong>Why it is fast in practice:</strong> Excellent cache locality.`,
+  merge:`<h3>Merge Sort</h3><strong>Core idea:</strong> Divide in half recursively until single elements, then merge sorted halves back together.<br><br><span class="tag">Divide</span> Split until size 1.<br><span class="tag">Merge</span> Compare front elements of two sorted halves, take the smaller one. Repeat.<br><br><strong>Mental model:</strong> Split a deck into individual cards, then merge sorted piles of 1, 2, 4, 8 cards.<br><br><strong>Guarantee:</strong> Always O(n log n), no worst case. Java Arrays.sort uses this for objects.<br><strong>Cost:</strong> Requires O(n) extra memory.`,
+  heap:`<h3>Heap Sort</h3><strong>Core idea:</strong> Build a max-heap (parent always larger than children). Repeatedly extract the max and place at end.<br><br><span class="tag">Phase 1</span> Heapify the array so heap property holds. O(n).<br><span class="tag">Phase 2</span> Swap root (max) to end. Reduce heap size. Re-heapify. Repeat.<br><br><strong>Mental model:</strong> Tournament bracket. The winner rises to the top. Remove winner, find new champion, repeat.<br><br><strong>Why clever:</strong> Max in O(1), heapify in O(log n). O(n log n) with O(1) space.`,
+  counting:`<h3>Counting Sort</h3><strong>Core idea:</strong> Skip comparisons entirely. Count occurrences of each value. Reconstruct sorted array from counts.<br><br><span class="tag">Step 1 - Count</span> For each element: count[value]++<br><span class="tag">Step 2 - Prefix sum</span> count[i] += count[i-1]. Converts counts into output positions.<br><span class="tag">Step 3 - Output</span> Place each element at its correct position.<br><br><strong>Why it beats O(n log n):</strong> Avoids the comparison-based lower bound entirely. O(n+k) where k is value range.<br><strong>Constraint:</strong> Only works for non-negative integers in a bounded range.`,
+  radix:`<h3>Radix Sort</h3><strong>Core idea:</strong> Sort digit by digit from least significant (units) to most significant (thousands). Use a stable sort at each pass.<br><br><span class="tag">Pass 1 - Units</span> Sort by units digit using counting sort.<br><span class="tag">Pass 2 - Tens</span> Re-sort by tens digit. Stability preserves units order within each tens group.<br><span class="tag">Pass k</span> After all digit positions, fully sorted.<br><br><strong>Why stability matters:</strong> If two elements have the same tens digit, their relative order from the units pass must be preserved.<br><strong>Advantage:</strong> O(nk) - beats comparison sorts for large integer datasets. Used in database indexing.`
+};
+
+let array=[],animating=false,stopFlag=false;
+let currentAlgo='bubble',comparisons=0,swaps=0,startTime=null;
+let steps=[],stepIdx=0,stepPlaying=false,stepTimer=null;
+
+const $=id=>document.getElementById(id);
+function getDelay(){const s=parseInt($('speed').value);return Math.round(280/(s*s*0.28+1));}
+function getStepDelay(){const s=parseInt($('speed').value);return Math.round(450/(s*0.7+1));}
+function randArr(n){return Array.from({length:n},()=>Math.floor(Math.random()*85)+10);}
+
+function drawBars(containerId,arr,highlights){
+  const hm={};(highlights||[]).forEach(h=>hm[h.i]=h.t);
+  const max=Math.max(...arr,1);
+  const c=$(containerId);c.innerHTML='';
+  arr.forEach((v,i)=>{const b=document.createElement('div');b.className='bar '+(hm[i]||'default');b.style.height=Math.round(v/max*100)+'%';c.appendChild(b);});
+}
+
+function setStatus(id,text,cls){const el=$(id);el.textContent=text;el.className='status-msg'+(cls?' '+cls:'');}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function astep(arr,hl){
+  if(stopFlag) throw new Error('stopped');
+  drawBars('bars-main',arr,hl.map(h=>({i:h.index,t:h.type})));
+  $('stat-cmp').textContent=comparisons;$('stat-swp').textContent=swaps;
+  if(startTime) $('stat-time').textContent=Date.now()-startTime;
+  await sleep(getDelay());
+}
+
+function markDone(arr){
+  drawBars('bars-main',arr,arr.map((_,i)=>({i,t:'sorted'})));
+  setStatus('status-msg','SORTED','done');
+  $('stat-time').textContent=Date.now()-startTime;
+}
+
+async function bubbleA(arr){
+  const n=arr.length;
+  for(let i=0;i<n-1;i++){for(let j=0;j<n-i-1;j++){comparisons++;
+    const shl=Array.from({length:i},(_,k)=>({index:n-1-k,type:'sorted'}));
+    await astep(arr,[{index:j,type:'comparing'},{index:j+1,type:'comparing'},...shl]);
+    if(arr[j]>arr[j+1]){swaps++;[arr[j],arr[j+1]]=[arr[j+1],arr[j]];await astep(arr,[{index:j,type:'swapping'},{index:j+1,type:'swapping'},...shl]);}}}
+  markDone(arr);
+}
+
+async function selectionA(arr){
+  const n=arr.length;const sd=[];
+  for(let i=0;i<n-1;i++){let mn=i;
+    for(let j=i+1;j<n;j++){comparisons++;await astep(arr,[{index:j,type:'comparing'},{index:mn,type:'pivot'},...sd.map(s=>({index:s,type:'sorted'}))]);if(arr[j]<arr[mn]) mn=j;}
+    if(mn!==i){swaps++;[arr[i],arr[mn]]=[arr[mn],arr[i]];}sd.push(i);}
+  markDone(arr);
+}
+
+async function insertionA(arr){
+  const n=arr.length;
+  for(let i=1;i<n;i++){const key=arr[i];let j=i-1;await astep(arr,[{index:i,type:'pivot'}]);
+    while(j>=0&&arr[j]>key){comparisons++;await astep(arr,[{index:j,type:'comparing'},{index:j+1,type:'swapping'}]);arr[j+1]=arr[j];swaps++;j--;}arr[j+1]=key;}
+  markDone(arr);
+}
+
+async function quickA(arr,lo=0,hi=arr.length-1,sd=new Set()){
+  if(lo>=hi){sd.add(lo);return;}
+  const pivot=arr[hi];let i=lo-1;
+  for(let j=lo;j<hi;j++){comparisons++;await astep(arr,[{index:hi,type:'pivot'},{index:j,type:'comparing'},...[...sd].map(s=>({index:s,type:'sorted'}))]);
+    if(arr[j]<=pivot){i++;if(i!==j){swaps++;[arr[i],arr[j]]=[arr[j],arr[i]];}}}
+  [arr[i+1],arr[hi]]=[arr[hi],arr[i+1]];swaps++;sd.add(i+1);
+  await astep(arr,[{index:i+1,type:'sorted'},...[...sd].map(s=>({index:s,type:'sorted'}))]);
+  await quickA(arr,lo,i,sd);await quickA(arr,i+2,hi,sd);
+  if(lo===0&&hi===arr.length-1) markDone(arr);
+}
+
+async function mergeA(arr,lo=0,hi=arr.length-1){
+  if(lo>=hi)return;const mid=Math.floor((lo+hi)/2);
+  await mergeA(arr,lo,mid);await mergeA(arr,mid+1,hi);
+  const left=arr.slice(lo,mid+1),right=arr.slice(mid+1,hi+1);let i=0,j=0,k=lo;
+  while(i<left.length&&j<right.length){comparisons++;await astep(arr,[{index:k,type:'comparing'}]);arr[k++]=left[i]<=right[j]?left[i++]:(swaps++,right[j++]);}
+  while(i<left.length){arr[k++]=left[i++];await astep(arr,[{index:k-1,type:'swapping'}]);}
+  while(j<right.length){arr[k++]=right[j++];await astep(arr,[{index:k-1,type:'swapping'}]);}
+  if(lo===0&&hi===arr.length-1) markDone(arr);
+}
+
+async function heapA(arr){
+  const n=arr.length;
+  async function hfy(sz,root){
+    let lg=root,l=2*root+1,r=2*root+2;comparisons++;
+    if(l<sz&&arr[l]>arr[lg]) lg=l;if(r<sz&&arr[r]>arr[lg]) lg=r;
+    await astep(arr,[{index:root,type:'comparing'},{index:lg,type:'pivot'}]);
+    if(lg!==root){swaps++;[arr[root],arr[lg]]=[arr[lg],arr[root]];await hfy(sz,lg);}
+  }
+  for(let i=Math.floor(n/2)-1;i>=0;i--) await hfy(n,i);
+  for(let i=n-1;i>0;i--){swaps++;[arr[0],arr[i]]=[arr[i],arr[0]];await astep(arr,[{index:0,type:'swapping'},{index:i,type:'sorted'}]);await hfy(i,0);}
+  markDone(arr);
+}
+
+async function countingA(arr){
+  const k=Math.max(...arr)+1;const cnt=new Array(k).fill(0);
+  for(let i=0;i<arr.length;i++){cnt[arr[i]]++;await astep(arr,[{index:i,type:'bucket'}]);}
+  for(let i=1;i<k;i++) cnt[i]+=cnt[i-1];
+  const out=new Array(arr.length);
+  for(let i=arr.length-1;i>=0;i--){out[--cnt[arr[i]]]=arr[i];swaps++;const tmp=[...out.map(v=>v||0)];await astep(tmp,out.map((v,x)=>({index:x,type:v?'sorted':'default'})));}
+  for(let i=0;i<arr.length;i++) arr[i]=out[i];markDone(arr);
+}
+
+async function radixA(arr){
+  const maxVal=Math.max(...arr);const digits=maxVal.toString().length;
+  for(let d=0;d<digits;d++){
+    const exp=Math.pow(10,d);await astep(arr,arr.map((_,i)=>({index:i,type:'bucket'})));
+    const cnt=new Array(10).fill(0);arr.forEach(v=>cnt[Math.floor(v/exp)%10]++);
+    for(let i=1;i<10;i++) cnt[i]+=cnt[i-1];
+    const out=new Array(arr.length);
+    for(let i=arr.length-1;i>=0;i--){out[--cnt[Math.floor(arr[i]/exp)%10]]=arr[i];swaps++;}
+    for(let i=0;i<arr.length;i++) arr[i]=out[i];
+    await astep(arr,arr.map((_,i)=>({index:i,type:d===digits-1?'sorted':'swapping'})));
+  }
+  markDone(arr);
+}
+
+function mkS(a,hl,msg,c,s){return{arr:[...a],hl:hl||[],msg:msg||'',c:c||0,s:s||0};}
+
+function buildSteps(a){
+  const S=[];let c=0,s=0;
+  S.push(mkS(a,[],'<strong>Starting array.</strong> '+a.length+' elements, unsorted. Press Next to walk through every operation.',0,0));
+
+  if(currentAlgo==='bubble'){
+    const ar=[...a];const n=ar.length;
+    for(let i=0;i<n-1;i++){for(let j=0;j<n-i-1;j++){c++;
+      const shl=Array.from({length:i},(_,k)=>({i:n-1-k,t:'sorted'}));
+      S.push(mkS(ar,[{i:j,t:'comparing'},{i:j+1,t:'comparing'},...shl],'<strong>Comparing</strong> index '+j+' ('+ar[j]+') and '+(j+1)+' ('+ar[j+1]+'). '+(ar[j]>ar[j+1]?'Left is bigger - SWAP!':'Already in order.'),c,s));
+      if(ar[j]>ar[j+1]){[ar[j],ar[j+1]]=[ar[j+1],ar[j]];s++;S.push(mkS(ar,[{i:j,t:'swapping'},{i:j+1,t:'swapping'},...shl],'<strong>Swapped.</strong> Larger value moves right.',c,s));}}}
+    S.push(mkS(ar,ar.map((_,i)=>({i,t:'sorted'})),'<strong>Sorted!</strong> '+c+' comparisons, '+s+' swaps.',c,s));
+  }
+  else if(currentAlgo==='selection'){
+    const ar=[...a];const n=ar.length;const sd=[];
+    for(let i=0;i<n-1;i++){let mn=i;
+      for(let j=i+1;j<n;j++){c++;S.push(mkS(ar,[{i:j,t:'comparing'},{i:mn,t:'pivot'},...sd.map(x=>({i:x,t:'sorted'}))],'<strong>Scanning</strong> index '+j+' ('+ar[j]+') vs min at '+mn+' ('+ar[mn]+'). '+(ar[j]<ar[mn]?'New minimum!':'Keep current min.'),c,s));if(ar[j]<ar[mn]) mn=j;}
+      if(mn!==i){[ar[i],ar[mn]]=[ar[mn],ar[i]];s++;S.push(mkS(ar,[{i:i,t:'swapping'},{i:mn,t:'swapping'},...sd.map(x=>({i:x,t:'sorted'}))],'<strong>Placed minimum</strong> ('+ar[i]+') at index '+i+'. Final position.',c,s));}sd.push(i);}
+    S.push(mkS(ar,ar.map((_,i)=>({i,t:'sorted'})),'<strong>Sorted!</strong> '+c+' comparisons, '+s+' swaps.',c,s));
+  }
+  else if(currentAlgo==='insertion'){
+    const ar=[...a];const n=ar.length;
+    for(let i=1;i<n;i++){const key=ar[i];let j=i-1;
+      S.push(mkS(ar,[{i,t:'pivot'},...Array.from({length:i},(_,k)=>({i:k,t:'sorted'}))],'<strong>Picking up</strong> '+key+' at index '+i+'. Inserting into sorted left section.',c,s));
+      while(j>=0&&ar[j]>key){c++;S.push(mkS(ar,[{i:j,t:'comparing'},{i:j+1,t:'swapping'},...Array.from({length:j},(_,k)=>({i:k,t:'sorted'}))],'<strong>Shifting</strong> '+ar[j]+' right to make room for '+key+'.',c,s));ar[j+1]=ar[j];s++;j--;}
+      ar[j+1]=key;S.push(mkS(ar,Array.from({length:i+1},(_,k)=>({i:k,t:'sorted'})),'<strong>Inserted</strong> '+key+' at position '+(j+1)+'.',c,s));}
+    S.push(mkS(ar,ar.map((_,i)=>({i,t:'sorted'})),'<strong>Sorted!</strong> '+c+' comparisons, '+s+' swaps.',c,s));
+  }
+  else if(currentAlgo==='quick'){
+    const ar=[...a];const sd=new Set();
+    function qs(lo,hi){if(lo>=hi){sd.add(lo);return;}const pivot=ar[hi];let i=lo-1;
+      S.push(mkS(ar,[{i:hi,t:'pivot'},...[...sd].map(x=>({i:x,t:'sorted'}))],'<strong>Pivot: </strong>'+pivot+' at index '+hi+'. Smaller elements go left, larger go right.',c,s));
+      for(let j=lo;j<hi;j++){c++;S.push(mkS(ar,[{i:hi,t:'pivot'},{i:j,t:'comparing'},...[...sd].map(x=>({i:x,t:'sorted'}))],'<strong>Comparing</strong> '+ar[j]+' with pivot '+pivot+'. '+(ar[j]<=pivot?'Smaller - left partition.':'Larger - stays right.'),c,s));
+        if(ar[j]<=pivot){i++;if(i!==j){[ar[i],ar[j]]=[ar[j],ar[i]];s++;S.push(mkS(ar,[{i:hi,t:'pivot'},{i,t:'swapping'},{i:j,t:'swapping'},...[...sd].map(x=>({i:x,t:'sorted'}))],'<strong>Swapped</strong> to left partition.',c,s));}}}
+      [ar[i+1],ar[hi]]=[ar[hi],ar[i+1]];s++;sd.add(i+1);
+      S.push(mkS(ar,[...[...sd].map(x=>({i:x,t:'sorted'}))],'<strong>Pivot placed</strong> at final position '+(i+1)+'. Recurse both halves.',c,s));
+      qs(lo,i);qs(i+2,hi);}
+    qs(0,ar.length-1);
+    S.push(mkS(ar,ar.map((_,i)=>({i,t:'sorted'})),'<strong>Sorted!</strong> '+c+' comparisons, '+s+' swaps.',c,s));
+  }
+  else if(currentAlgo==='merge'){
+    const ar=[...a];
+    function ms(lo,hi){if(lo>=hi)return;const mid=Math.floor((lo+hi)/2);
+      S.push(mkS(ar,Array.from({length:hi-lo+1},(_,k)=>({i:lo+k,t:'comparing'})),'<strong>Dividing</strong> ['+lo+'..'+hi+'] at mid '+mid+'.',c,s));
+      ms(lo,mid);ms(mid+1,hi);
+      const left=ar.slice(lo,mid+1),right=ar.slice(mid+1,hi+1);let i2=0,j2=0,k=lo;
+      S.push(mkS(ar,Array.from({length:hi-lo+1},(_,x)=>({i:lo+x,t:'swapping'})),'<strong>Merging</strong> sorted halves ['+lo+'..'+mid+'] and ['+(mid+1)+'..'+hi+'].',c,s));
+      while(i2<left.length&&j2<right.length){c++;ar[k++]=left[i2]<=right[j2]?left[i2++]:(s++,right[j2++]);}
+      while(i2<left.length) ar[k++]=left[i2++];while(j2<right.length) ar[k++]=right[j2++];
+      S.push(mkS(ar,Array.from({length:hi-lo+1},(_,x)=>({i:lo+x,t:'sorted'})),'<strong>Merged</strong> ['+lo+'..'+hi+'].',c,s));}
+    ms(0,ar.length-1);
+    S.push(mkS(ar,ar.map((_,i)=>({i,t:'sorted'})),'<strong>Sorted!</strong> '+c+' comparisons, '+s+' writes.',c,s));
+  }
+  else if(currentAlgo==='heap'){
+    const ar=[...a];const n=ar.length;
+    function hfy(sz,root){let lg=root,l=2*root+1,r=2*root+2;
+      if(l<sz&&ar[l]>ar[lg]) lg=l;if(r<sz&&ar[r]>ar[lg]) lg=r;c++;
+      S.push(mkS(ar,[{i:root,t:'comparing'},{i:lg,t:'pivot'}],'<strong>Heapify</strong> at '+root+': '+(lg!==root?'child at '+lg+' ('+ar[lg]+') larger - swap up.':'parent is max, heap OK.'),c,s));
+      if(lg!==root){[ar[root],ar[lg]]=[ar[lg],ar[root]];s++;S.push(mkS(ar,[{i:root,t:'swapping'},{i:lg,t:'swapping'}],'<strong>Swapped</strong> to restore max-heap.',c,s));hfy(sz,lg);}}
+    S.push(mkS(ar,[],'<strong>Phase 1: Build max-heap.</strong> Parent always >= children.',c,s));
+    for(let i=Math.floor(n/2)-1;i>=0;i--) hfy(n,i);
+    S.push(mkS(ar,ar.map((_,i)=>({i,t:'bucket'})),'<strong>Max-heap built!</strong> Root is always the largest element. Phase 2: extract max repeatedly.',c,s));
+    for(let i=n-1;i>0;i--){[ar[0],ar[i]]=[ar[i],ar[0]];s++;S.push(mkS(ar,[{i:0,t:'swapping'},{i,t:'sorted'}],'<strong>Extracted max</strong> ('+ar[i]+') to final position '+i+'.',c,s));hfy(i,0);}
+    S.push(mkS(ar,ar.map((_,i)=>({i,t:'sorted'})),'<strong>Sorted!</strong> '+c+' comparisons, '+s+' swaps.',c,s));
+  }
+  else if(currentAlgo==='counting'){
+    const ar=[...a];const k=Math.max(...ar)+1;const cnt=new Array(k).fill(0);
+    S.push(mkS(ar,[],'<strong>Counting sort - zero comparisons.</strong> We count how many times each value appears.',0,0));
+    ar.forEach((v,i)=>{cnt[v]++;S.push(mkS(ar,[{i,t:'bucket'}],'<strong>Counted</strong> value '+v+'. count['+v+'] = '+cnt[v]+'. No comparison - just increment a counter.',c,s));});
+    S.push(mkS(ar,[],'<strong>Prefix sum pass.</strong> count[i] += count[i-1]. Converts counts into final output positions.',c,s));
+    for(let i=1;i<k;i++) cnt[i]+=cnt[i-1];
+    const out=new Array(ar.length);
+    for(let i=ar.length-1;i>=0;i--){out[--cnt[ar[i]]]=ar[i];s++;const tmp=out.map(v=>v===undefined?0:v);S.push(mkS(tmp,tmp.map((v,x)=>({i:x,t:v?'sorted':'default'})),'<strong>Placing</strong> value '+ar[i]+' at its correct output position.',c,s));}
+    S.push(mkS(out,out.map((_,i)=>({i,t:'sorted'})),'<strong>Sorted!</strong> 0 comparisons, '+s+' placements. Range k = '+k+'.',c,s));
+  }
+  else if(currentAlgo==='radix'){
+    const ar=[...a];const maxVal=Math.max(...ar);const digits=maxVal.toString().length;
+    S.push(mkS(ar,[],'<strong>Radix sort.</strong> Sort digit by digit - units first, then tens, then hundreds. Uses counting sort (stable) at each pass.',0,0));
+    for(let d=0;d<digits;d++){
+      const exp=Math.pow(10,d);const dname=d===0?'units':d===1?'tens':'hundreds';
+      S.push(mkS(ar,ar.map((_,i)=>({i,t:'bucket'})),'<strong>Pass '+(d+1)+'/'+digits+':</strong> Sorting by the '+dname+' digit.',c,s));
+      const cnt2=new Array(10).fill(0);ar.forEach(v=>cnt2[Math.floor(v/exp)%10]++);for(let i=1;i<10;i++) cnt2[i]+=cnt2[i-1];
+      const out2=new Array(ar.length);
+      for(let i=ar.length-1;i>=0;i--){const dig=Math.floor(ar[i]/exp)%10;out2[--cnt2[dig]]=ar[i];s++;
+        S.push(mkS([...out2.map(v=>v===undefined?0:v)],[],'<strong>Placing</strong> '+ar[i]+' by its '+dname+' digit ('+dig+'). Stable - preserves prior pass order.',c,s));}
+      for(let i=0;i<ar.length;i++) ar[i]=out2[i];
+      S.push(mkS(ar,ar.map((_,i)=>({i,t:d===digits-1?'sorted':'swapping'})),'<strong>After pass '+(d+1)+':</strong> Array sorted by '+(d===0?'units':d===1?'units + tens':'all digits')+'.',c,s));}
+    S.push(mkS(ar,ar.map((_,i)=>({i,t:'sorted'})),'<strong>Sorted!</strong> '+digits+' passes, 0 comparisons, '+s+' placements.',c,s));
+  }
+  return S;
+}
+
+function updateCard(){const cx=ALGOS[currentAlgo];$('cx-best').textContent=cx.best;$('cx-avg').textContent=cx.avg;$('cx-worst').textContent=cx.worst;$('cx-space').textContent=cx.space;}
+function updateTable(){$('cx-body').innerHTML=Object.entries(ALGOS).map(([k,v])=>`<tr class="${k===currentAlgo?'cur':''}"><td>${v.label}</td><td class="td-b">${v.best}</td><td class="td-a">${v.avg}</td><td class="td-w">${v.worst}</td><td class="td-s">${v.space}</td><td style="color:${v.stable?'var(--accent3)':'var(--accent2)'}">${v.stable?'Yes':'No'}</td><td style="color:var(--muted)">${v.type}</td></tr>`).join('');}
+function updateHow(){$('how-box').innerHTML=HOW[currentAlgo];}
+
+function generateViz(){
+  const n=parseInt($('size').value);array=randArr(n);comparisons=0;swaps=0;
+  $('stat-cmp').textContent='0';$('stat-swp').textContent='0';$('stat-time').textContent='-';$('stat-el').textContent=n;
+  drawBars('bars-main',array,[]);setStatus('status-msg','READY','');
+}
+
+function stepGen(){
+  const n=Math.min(parseInt($('size').value),28);
+  steps=buildSteps(randArr(n));stepIdx=0;renderStep();
+  $('sp-btn').disabled=true;$('sn-btn').disabled=false;$('splay-btn').disabled=false;
+}
+
+function renderStep(){
+  if(!steps.length)return;
+  const st=steps[stepIdx];
+  drawBars('bars-step',st.arr,st.hl);
+  $('explain-box').innerHTML=st.msg;
+  $('step-counter').textContent=stepIdx+' / '+(steps.length-1);
+  $('prog-fill').style.width=Math.round(stepIdx/(steps.length-1)*100)+'%';
+  $('sp-btn').disabled=stepIdx===0;$('sn-btn').disabled=stepIdx===steps.length-1;
+  setStatus('step-status',stepIdx===steps.length-1?'SORTED':stepIdx===0?'READY':'STEP '+stepIdx,stepIdx===steps.length-1?'done':stepIdx===0?'':'running');
+}
+
+function stopStep(){if(stepTimer){clearTimeout(stepTimer);stepTimer=null;}stepPlaying=false;$('splay-btn').textContent='Run';$('sstop-btn').disabled=true;$('sg-btn').disabled=false;}
+function stepPlay(){if(!stepPlaying||stepIdx>=steps.length-1){stopStep();return;}stepIdx++;renderStep();stepTimer=setTimeout(stepPlay,getStepDelay());}
+
+$('sg-btn').addEventListener('click',()=>{stopStep();stepGen();});
+$('sp-btn').addEventListener('click',()=>{if(stepIdx>0){stepIdx--;renderStep();}});
+$('sn-btn').addEventListener('click',()=>{if(stepIdx<steps.length-1){stepIdx++;renderStep();}});
+$('sstop-btn').addEventListener('click',stopStep);
+$('splay-btn').addEventListener('click',()=>{
+  if(stepPlaying){stopStep();return;}
+  if(stepIdx>=steps.length-1) stepIdx=0;
+  stepPlaying=true;$('splay-btn').textContent='Pause';$('sstop-btn').disabled=false;$('sg-btn').disabled=true;stepPlay();
+});
+
+$('speed').addEventListener('input',()=>$('speed-label').textContent=$('speed').value);
+$('size').addEventListener('input',()=>{$('size-label').textContent=$('size').value;if(!animating) generateViz();});
+
+document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>{
+  if(animating)return;
+  document.querySelectorAll('.pill').forEach(x=>x.classList.remove('active'));p.classList.add('active');
+  currentAlgo=p.dataset.algo;updateCard();updateTable();updateHow();generateViz();if(steps.length) stepGen();
+}));
+
+$('reset-btn').addEventListener('click',()=>{if(!animating) generateViz();});
+$('stop-btn').addEventListener('click',()=>{stopFlag=true;$('stop-btn').disabled=true;});
+
+$('start-btn').addEventListener('click',async()=>{
+  if(animating)return;animating=true;stopFlag=false;
+  $('start-btn').disabled=true;$('reset-btn').disabled=true;$('stop-btn').disabled=false;
+  comparisons=0;swaps=0;startTime=Date.now();setStatus('status-msg','RUNNING','running');
+  const arr=[...array];
+  try{
+    if(currentAlgo==='bubble')    await bubbleA(arr);
+    if(currentAlgo==='selection') await selectionA(arr);
+    if(currentAlgo==='insertion') await insertionA(arr);
+    if(currentAlgo==='quick')     await quickA(arr);
+    if(currentAlgo==='merge')     await mergeA(arr);
+    if(currentAlgo==='heap')      await heapA(arr);
+    if(currentAlgo==='counting')  await countingA(arr);
+    if(currentAlgo==='radix')     await radixA(arr);
+    array=arr;
+  }catch(e){setStatus('status-msg','STOPPED','');drawBars('bars-main',arr,[]);}
+  animating=false;$('start-btn').disabled=false;$('reset-btn').disabled=false;$('stop-btn').disabled=true;
+});
+
+let chartDrawn=false;
+document.querySelectorAll('.tab').forEach(tab=>tab.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  tab.classList.add('active');document.getElementById('panel-'+tab.dataset.tab).classList.add('active');
+  if(tab.dataset.tab==='chart'&&!chartDrawn){drawChart();chartDrawn=true;}
+  if(tab.dataset.tab==='step'&&!steps.length) stepGen();
+}));
+
+function drawChart(){
+  const ns=[5,10,20,50,100,200,500,1000];
+  new Chart($('perf-chart').getContext('2d'),{type:'line',
+    data:{labels:ns.map(String),datasets:[
+      {label:'O(n2) - Bubble/Selection/Insertion',data:ns.map(n=>n*n),borderColor:'#f7426a',borderWidth:2,tension:0.3,pointRadius:0,fill:false},
+      {label:'O(n log n) - Quick/Merge/Heap',data:ns.map(n=>Math.round(n*Math.log2(n))),borderColor:'#7c6af7',borderWidth:2,tension:0.3,pointRadius:0,fill:false},
+      {label:'O(n) - Linear best case',data:ns.map(n=>n),borderColor:'#42f7c8',borderWidth:2,tension:0.3,pointRadius:0,fill:false},
+      {label:'O(n+k) - Counting/Radix',data:ns.map(n=>n+100),borderColor:'#f7c842',borderWidth:2,tension:0.3,pointRadius:0,borderDash:[5,4],fill:false},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#55556a',font:{size:11},boxWidth:16}}},
+      scales:{x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#55556a',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#55556a',font:{size:10}},beginAtZero:true}}}});
+}
+
+updateCard();updateTable();updateHow();generateViz();
+</script>
+</body>
+</html>
